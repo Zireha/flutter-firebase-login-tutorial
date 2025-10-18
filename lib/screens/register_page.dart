@@ -5,21 +5,22 @@ import 'package:firebase_auth_tutorial/components/square_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class LoginPage extends StatefulWidget {
+class RegisterPage extends StatefulWidget {
   final Function()? onTap;
-  const LoginPage({super.key, required this.onTap});
+  const RegisterPage({super.key, required this.onTap});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  State<RegisterPage> createState() => _RegisterPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _RegisterPageState extends State<RegisterPage> {
   final emailController = TextEditingController();
-
   final passwordController = TextEditingController();
+  final confirmPasswordController = TextEditingController();
 
   //sign the user in
-  void signIn() async {
+  void signUp() async {
+    //loading circle
     showDialog(
       context: context,
       builder: (context) {
@@ -29,28 +30,40 @@ class _LoginPageState extends State<LoginPage> {
       },
     );
 
+    //try registering the user
     try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: emailController.text,
-        password: passwordController.text,
-      );
+      if (passwordController.text == confirmPasswordController.text) {
+        await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: emailController.text,
+          password: passwordController.text,
+        );
+      } else {
+        errorSnackbar("Passwords don't match");
+      }
       Navigator.pop(context);
     } on FirebaseAuthException catch (e) {
       Navigator.pop(context);
+      // errorSnackbar(e.code);
       if (e.code == "invalid-credential") {
         emailController.clear();
         passwordController.clear();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              "Username or Password is Invalid",
-              style: GoogleFonts.poppins(),
-            ),
-            backgroundColor: Colors.red,
-          ),
-        );
+        errorSnackbar("Email or Password is invalid");
+      } else if (e.code == "weak-password") {
+        errorSnackbar("Password should be atleast 6 characters");
       }
     }
+  }
+
+  void errorSnackbar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: GoogleFonts.poppins(),
+        ),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
 
   @override
@@ -76,7 +89,7 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 //greeting text
                 Text(
-                  "Welcome! or welcome back perhaps?",
+                  "Let\'s make an account for you!",
                   style: GoogleFonts.montserrat(
                       fontSize: 16,
                       color: Colors.grey[800],
@@ -94,7 +107,7 @@ class _LoginPageState extends State<LoginPage> {
                 ),
 
                 const SizedBox(
-                  height: 28,
+                  height: 12,
                 ),
 
                 //password field
@@ -106,26 +119,18 @@ class _LoginPageState extends State<LoginPage> {
                 const SizedBox(
                   height: 12,
                 ),
-                //forgor passowrd?
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 24),
-                      child: Text(
-                        "Forgot Password?",
-                        style: GoogleFonts.montserrat(color: Colors.black87),
-                      ),
-                    )
-                  ],
+                MyTextfield(
+                  controller: confirmPasswordController,
+                  hintText: "Confirm Password",
+                  isObscured: true,
                 ),
                 SizedBox(
-                  height: 12,
+                  height: 32,
                 ),
                 //sign in button
                 MyButton(
-                  onTap: signIn,
-                  buttonName: "Sign in",
+                  onTap: signUp,
+                  buttonName: "Sign Up",
                 ),
                 //continue with google account
                 SizedBox(
@@ -179,7 +184,7 @@ class _LoginPageState extends State<LoginPage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      "Not a member?",
+                      "Already have an account?",
                       style: GoogleFonts.montserrat(
                           color: Colors.black87, fontWeight: FontWeight.w600),
                     ),
@@ -189,7 +194,7 @@ class _LoginPageState extends State<LoginPage> {
                     GestureDetector(
                       onTap: widget.onTap,
                       child: Text(
-                        "Register Now",
+                        "Login Now",
                         style: GoogleFonts.montserrat(
                             color: Colors.blueAccent,
                             fontWeight: FontWeight.w600),
@@ -210,6 +215,7 @@ class _LoginPageState extends State<LoginPage> {
     // TODO: implement dispose
     emailController.dispose();
     passwordController.dispose();
+    confirmPasswordController.dispose();
     super.dispose();
   }
 }
